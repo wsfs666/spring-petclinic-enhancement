@@ -172,3 +172,16 @@ For additional details, please refer to the blog post [Hello DCO, Goodbye CLA: S
 ## License
 
 The Spring PetClinic sample application is released under version 2.0 of the [Apache License](https://www.apache.org/licenses/LICENSE-2.0).
+
+
+
+
+## My Enhancement Plan
+
+This repository is my enhancement fork of Spring PetClinic, focused on backend reliability, REST API design, automated testing, Docker, and CI/CD.
+
+Planned enhancements:
+- Add REST API improvements with DTOs, validation, pagination, and global exception handling.
+- Add audit logging and SQL/JPA query optimization.
+- Add JUnit, MockMvc, Testcontainers, and Postman-based API testing.
+- Add Docker, docker-compose, and GitHub Actions CI workflow.
