@@ -3,15 +3,19 @@ package org.springframework.samples.petclinic.owner;
 import java.beans.Transient;
 import java.util.Optional;
 
+import org.assertj.core.condition.AnyOf;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.http.MediaType;
 
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -24,6 +28,8 @@ import org.springframework.data.domain.Pageable;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @WebMvcTest(OwnerRestController.class)
 // When you use @WebMvcTest, it only loads the web layer (the controller, filters, etc.),
@@ -88,6 +94,104 @@ public class OwnerRestControllerTests {
 		given(this.owners.findByLastNameStartingWith(eq("Li"), any(Pageable.class))).willReturn(page);
 
 		mockMvc.perform(get("/api/owners?lastName={lastName}", "Li")).andExpect(status().isOk());
+
+	}
+
+	@Test
+	// 验收： 合法请求可以创建 Owner，响应包含数据库生成的 ID，字段映射正确。
+	public void shouldReturnCreatedOwner() throws Exception {
+
+		/// Arrange
+		String requestBody = """
+				{
+				  "firstName": "Amy",
+				  "lastName": "Smith",
+				  "address": "123 Main St",
+				  "city": "Seattle",
+				  "telephone": "1234567890"
+				}
+				""";
+
+		Owner savedOwner = new Owner();
+		savedOwner.setAddress("123 Main St");
+		savedOwner.setCity("Seattle");
+		savedOwner.setFirstName("Amy");
+		savedOwner.setLastName("Smith");
+		savedOwner.setTelephone("1234567890");
+		savedOwner.setId(13);
+
+		// if this method is called , safedOwner will return
+		given(this.owners.save(any(Owner.class))).willReturn(savedOwner);
+
+		// verify(owners).save(any(Owner.class));
+
+		// Request validation failed return 400 Bad Request
+		// when it is illegal requesting, repository.save() not callable
+
+		mockMvc.perform(post("/api/owners").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.city").value("Seattle"))
+			.andExpect(jsonPath("$.id").value(13));
+
+	}
+
+	@Test
+	public void shouldReturnWhenFirstNameIsBlank() throws Exception {
+		// Request validation failed return 400 Bad Request
+		String FirstNameIsBlank = """
+				{
+				  "firstName": "",
+				  "lastName": "Smith",
+				  "address": "123 Main St",
+				  "city": "Seattle",
+				  "telephone": "1234567890"
+				}
+				""";
+
+		mockMvc.perform(post("/api/owners").contentType(MediaType.APPLICATION_JSON).content(FirstNameIsBlank))
+			.andExpect(status().isBadRequest());
+
+		verify(owners, never()).save(any(Owner.class));
+
+	}
+
+	// id not exist testing
+
+	@Test
+	public void shouldReturnWhenIdNotExist() throws Exception {
+
+		String requestBody = """
+				{
+				  "firstName": "Amy",
+				  "lastName": "Smith",
+				  "address": "123 Main St",
+				  "city": "Seattle",
+				  "telephone": "1234567890"
+				}
+				""";
+
+		given(this.owners.findById(999)).willReturn(Optional.empty());
+		mockMvc.perform(put("/api/owners/{ownerId}", 999).contentType(MediaType.APPLICATION_JSON).content(requestBody))
+			.andExpect(status().isNotFound());
+
+	}
+
+	// id exist, illegal update testing
+	@Test
+	public void shouldReturnWhenIllegalUpdate() throws Exception {
+
+		String requestBody = """
+				{
+				  "firstName": "",
+				  "lastName": "Smith",
+				  "address": "123 Main St",
+				  "city": "Seattle",
+				  "telephone": "1234567890"
+				}
+				""";
+
+		mockMvc.perform(put("/api/owners/{ownerId}", 13).contentType(MediaType.APPLICATION_JSON).content(requestBody))
+			.andExpect(status().isBadRequest());
 
 	}
 
