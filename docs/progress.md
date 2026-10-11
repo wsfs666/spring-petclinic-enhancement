@@ -57,3 +57,115 @@
 - PUT/PATCH update owner: Not started
 - DELETE owner: Not started
 - Validation: Not started
+
+
+
+
+
+# 2026-10-08 Progress
+
+## Main Goal
+Completed Owner REST API create/update validation and controller testing.
+
+## Completed
+- Implemented and tested `POST /api/owners`
+  - Valid request returns `201 Created`
+  - Response includes generated Owner ID
+  - Added request DTO validation
+
+- Implemented and tested `PUT /api/owners/{ownerId}`
+  - Existing Owner can be updated successfully
+  - Existing ID is preserved
+  - Nonexistent Owner returns `404 Not Found`
+  - Invalid update request returns `400 Bad Request`
+
+- Added / used validation annotations:
+  - `@Valid`
+  - `@NotBlank`
+  - `@Size`
+  - `@Pattern`
+
+- Clarified validation flow:
+  - JSON → `@RequestBody`
+  - `@Valid` triggers request DTO validation
+  - Invalid request is rejected before controller logic executes
+  - Invalid request should not call `repository.save()`
+
+- Improved controller tests with MockMvc / Mockito
+  - Valid POST
+  - Blank required field
+  - Nonexistent Owner update
+  - Invalid PUT request
+  - Verified `repository.save()` is not called for invalid requests
+
+- Fixed POST generated-ID test
+  - Learned that Mockito does not automatically generate database IDs
+  - Mocked `repository.save()` to return a saved Owner with an ID
+  - Used the return value of `save()` to build `OwnerResponse`
+
+- Clarified `JpaRepository.save()` behavior
+  - New entity with null ID → create / insert
+  - Existing entity with ID → update
+  - Update should not delete and recreate the entity
+
+## Test Result
+- `OwnerRestControllerTests`
+- Tests run: 7
+- Failures: 0
+- Errors: 0
+- Skipped: 0
+- BUILD SUCCESS
+
+## Key Understanding
+- Validation rules belong on the request DTO.
+- `@Valid` triggers validation at the controller boundary.
+- `400` means invalid request data.
+- `404` means the requested resource does not exist.
+- `201` is used for successful resource creation.
+- `200` is appropriate for successful update with response body.
+- `save()` return value should be used when the persisted entity may contain generated values such as ID.
+- MockMvc tests can verify both HTTP behavior and whether persistence logic was invoked.
+
+## Current Owner REST API Status
+- GET by ID: Complete
+- Search by last name: Complete
+- POST create: Complete
+- PUT update: Complete
+- Request validation: Complete
+- 400 handling: Complete
+- 404 handling: Complete
+- Controller tests: Complete
+- PATCH: Not started
+- DELETE: Not started
+
+
+
+
+
+
+
+
+
+
+##2026-10-09
+已完成：
+- Pet GET/POST/PUT implementation
+- PetRequest / PetResponse
+- PetType lookup
+- Owner-Pet relationship handling
+
+未完成：
+- Pet controller tests
+- AI/ML
+
+Blocker：
+- 无
+
+Evidence：
+- commit:
+- compile/test result:
+- GitHub push:
+
+明天是否顺延：
+- 是，只顺延 Pet tests
+
