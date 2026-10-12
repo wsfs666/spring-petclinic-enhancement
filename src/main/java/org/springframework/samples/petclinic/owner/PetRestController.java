@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.validation.Valid;
@@ -116,6 +118,37 @@ public class PetRestController {
 				pet.getType().getName(), ownerId);
 
 		return ResponseEntity.status(HttpStatus.OK).body(petResponse);
+
+	}
+
+	// DELETE /api/owners/{ownerId}/pets/{petId}
+	// 验证成功删除、Owner 不存在、Pet 不存在或不属于该 Owner 三种情况。
+
+	@DeleteMapping("/{ownerId}/pets/{petId}")
+	public ResponseEntity<Void> deletePet(@PathVariable("ownerId") int ownerId, @PathVariable("petId") int petId) {
+		Optional<Owner> optionalOwner = this.owners.findById(ownerId);
+		Owner owner = optionalOwner
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "owner not found with id" + ownerId));
+		// does not find owner with ownerId
+
+		if (owner.getPets().isEmpty())
+			return ResponseEntity.notFound().build();// owner with owenerId does not have
+														// pets
+
+		Pet pet = owner.getPet(petId);
+		if (pet == null) {
+			return ResponseEntity.notFound().build();
+		}
+		// pet with petId does not belong to owner with ownerId;
+
+		owner.getPets().remove(pet);
+		this.owners.save(owner);
+		// only when set orphanRemoval = true, the pet entity can be successfully detached
+		// in db
+		// otherwise it is just manipulation in collection relationship, not lead to pet
+		// entity deletion
+
+		return ResponseEntity.noContent().build();
 
 	}
 

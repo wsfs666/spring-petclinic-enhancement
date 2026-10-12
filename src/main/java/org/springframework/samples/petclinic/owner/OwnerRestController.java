@@ -1,5 +1,6 @@
 package org.springframework.samples.petclinic.owner;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -115,6 +116,20 @@ public class OwnerRestController {
 
 		return ResponseEntity.ok(ownerResponse);
 
+	}
+
+	// DELETE /api/owners/{ownerId}
+	// delete successfully,return 204 No Content；if Owner no exists, return 404
+	// 补充对应 MockMvc tests。
+	@DeleteMapping("/{ownerId}")
+	public ResponseEntity<Void> deleteOwner(@PathVariable("ownerId") int ownerId) {
+		Optional<Owner> optionalOwner = this.owners.findById(ownerId);
+		Owner owner = optionalOwner
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "owner not found with id:" + ownerId));
+
+		this.owners.delete(owner);
+
+		return ResponseEntity.noContent().build();
 	}
 
 }

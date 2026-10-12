@@ -169,3 +169,95 @@ Evidence：
 明天是否顺延：
 - 是，只顺延 Pet tests
 
+
+
+# 2026-10-10 Progress
+
+## Main Goal
+Completed Pet REST API GET / PUT controller tests and request validation cleanup.
+
+## Completed
+
+- Completed `PetRestControllerTests` for:
+  - `GET /api/owners/{ownerId}/pets`
+  - `PUT /api/owners/{ownerId}/pets/{petId}`
+
+- GET test coverage:
+  - Owner exists and has pets
+    - returns `200 OK`
+    - response contains expected pet fields
+  - Owner exists but has no pets
+    - returns `200 OK`
+    - response is an empty list
+  - Owner does not exist
+    - returns `404 Not Found`
+
+- PUT test coverage:
+  - Valid Owner + valid Pet + valid PetType
+    - returns `200 OK`
+    - pet ID remains unchanged
+    - name, birthDate, and pet type are updated correctly
+  - Owner does not exist
+    - returns `404 Not Found`
+  - Pet does not exist under the Owner
+    - returns `404 Not Found`
+  - PetType does not exist
+    - returns `404 Not Found`
+  - Invalid request body
+    - returns `400 Bad Request`
+
+- Cleaned up Pet request validation:
+  - `@NotBlank` for `String petName`
+  - `@NotNull` for `LocalDate birthDate`
+  - `@NotNull` for `Integer typeId`
+
+- Clarified validation behavior:
+  - `@NotBlank` should only be used for String / CharSequence
+  - `@NotNull` should be used for object types such as `LocalDate` and `Integer`
+  - validation happens before the controller method body executes
+  - if validation fails, Spring returns `400` before repository/controller business logic continues
+
+- Clarified MockMvc / Mockito test behavior:
+  - `@MockitoBean` must be declared separately for each dependency
+  - mocked repository `save()` does not actually persist data
+  - test fixtures are built in memory using objects and `given(...).willReturn(...)`
+  - unnecessary mock `save()` calls were identified for cleanup
+
+- Clarified REST API testing concepts:
+  - UI flow and REST API contract are different
+  - backend endpoints must still handle invalid/missing resources even if the normal UI would not generate those requests
+  - `400` = invalid request data
+  - `404` = requested resource or referenced resource does not exist
+
+## Test Status
+
+`PetRestControllerTests`
+
+- GET cases: complete
+- PUT cases: complete
+- Validation cases: complete
+- Missing Owner / Pet / PetType cases: complete
+
+All current tests are passing.
+
+## Key Understanding
+
+- `@Valid` validates the DTO before entering controller logic.
+- `@NotBlank` is for text fields.
+- `@NotNull` is for non-String object fields such as `LocalDate` and `Integer`.
+- A valid JSON body can still fail Bean Validation and return `400`.
+- Malformed JSON and validation failure are both `400`, but they fail at different stages.
+- Nested resource endpoints must validate both the parent resource and the target resource.
+- Controller tests should verify API behavior, not simulate real database persistence.
+
+## Current Pet REST API Status
+
+- GET pets by Owner: Complete
+- PUT Pet update: Complete
+- Request validation: Complete
+- 400 handling: Complete
+- 404 handling: Complete
+- Controller tests: Complete
+
+
+

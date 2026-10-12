@@ -16,6 +16,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
@@ -302,6 +303,61 @@ public class PetRestControllerTests {
 			.perform(put("/api/owners/{ownerId}/pets/{petId}", 15, 3).contentType(MediaType.APPLICATION_JSON)
 				.content(petRequest))
 			.andExpect(status().isNotFound());
+
+	}
+
+	// tests on delete /api/owners/{ownerId}/pets/{petId}
+	// Owner + Pet 都存在 204 No Content
+	// Owner 不存在 404 Not Found
+	// Owner 存在，但 Pet 不存在/不属于该 Owner 404 Not Found
+
+	@Test
+	public void shouldReturnWhenDeleteValidPet() throws Exception {
+		Owner owner = new Owner();
+		owner.setId(15);
+		owner.setAddress("17888 Linden Ave");
+		owner.setCity("Shoreline");
+		owner.setFirstName("Kate");
+		owner.setLastName("Li");
+		owner.setTelephone("1234567891");
+
+		Pet pet = new Pet();
+		pet.setBirthDate(LocalDate.of(2026, 10, 10));
+		pet.setName("Cold");
+		PetType cat = new PetType();
+		cat.setId(1);
+		cat.setName("cat");
+		pet.setType(cat);
+
+		owner.addPet(pet);
+		pet.setId(2);
+
+		given(this.owners.findById(15)).willReturn(Optional.of(owner));
+
+		mockMvc.perform(delete("/api/owners/{ownerId}/pets/{petId}", 15, 2)).andExpect(status().isNoContent());
+
+	}
+
+	@Test
+	public void shouldReturnWhenNoValidOwner() throws Exception {
+
+		given(this.owners.findById(999)).willReturn(Optional.empty());
+
+		mockMvc.perform(delete("/api/owners/{ownerId}/pets/{petId}", 999, 2)).andExpect(status().isNotFound());
+	}
+
+	@Test
+	public void shouldReturnWhenDeleteNoValidPet() throws Exception {
+		Owner owner = new Owner();
+		owner.setId(15);
+		owner.setAddress("17888 Linden Ave");
+		owner.setCity("Shoreline");
+		owner.setFirstName("Kate");
+		owner.setLastName("Li");
+		owner.setTelephone("1234567891");
+
+		given(this.owners.findById(15)).willReturn(Optional.of(owner));
+		mockMvc.perform(delete("/api/owners/{ownerId}/pets/{petId}", 15, 2)).andExpect(status().isNotFound());
 
 	}
 
