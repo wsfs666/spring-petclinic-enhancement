@@ -6,19 +6,26 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.file.OpenOption;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.samples.petclinic.owner.Service.VisitService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.server.ResponseStatusException;
 
 @WebMvcTest(VisitRestController.class)
 public class VisitRestControllerTests {
@@ -27,7 +34,8 @@ public class VisitRestControllerTests {
 	private MockMvc mockMvc;
 
 	@MockitoBean
-	private OwnerRepository owners;
+	// private OwnerRepository owners;
+	private VisitService visitService;
 
 	// GET visits — owner + pet + visits exist
 	// return200 OK
@@ -35,39 +43,34 @@ public class VisitRestControllerTests {
 
 	@Test
 	public void shouldReturnWhenGetValidVisits() throws Exception {
-		Owner owner = new Owner();
-		owner.setId(15);
-		owner.setAddress("17888 Linden Ave");
-		owner.setCity("Shoreline");
-		owner.setFirstName("Kate");
-		owner.setLastName("Li");
-		owner.setTelephone("1234567891");
-		Pet pet = new Pet();
-		pet.setBirthDate(LocalDate.of(2026, 1, 1));
+		/*
+		 * Owner owner = new Owner(); owner.setId(15);
+		 * owner.setAddress("17888 Linden Ave"); owner.setCity("Shoreline");
+		 * owner.setFirstName("Kate"); owner.setLastName("Li");
+		 * owner.setTelephone("1234567891"); Pet pet = new Pet();
+		 * pet.setBirthDate(LocalDate.of(2026, 1, 1));
+		 *
+		 * pet.setName("Cola"); PetType cat = new PetType(); cat.setId(1);
+		 * cat.setName("cat"); pet.setType(cat);
+		 *
+		 * Visit visit = new Visit(); visit.setDate(LocalDate.of(2026, 10, 11));
+		 * visit.setDescription("annual body examiniation.");
+		 *
+		 * pet.addVisit(visit); owner.addPet(pet); pet.setId(2); visit.setId(1);
+		 */
 
-		pet.setName("Cola");
-		PetType cat = new PetType();
-		cat.setId(1);
-		cat.setName("cat");
-		pet.setType(cat);
+		List<VisitResponse> vResponses = new ArrayList<>();
+		VisitResponse vResponse = new VisitResponse(1, LocalDate.of(2026, 10, 11), "annual body examiniation.", 2, 15);
+		vResponses.add(vResponse);
 
-		Visit visit = new Visit();
-		visit.setDate(LocalDate.of(2026, 10, 11));
-		visit.setDescription("annual body examiniation.");
-
-		pet.addVisit(visit);
-		owner.addPet(pet);
-		pet.setId(2);
-		visit.setId(1);
-
-		given(this.owners.findById(15)).willReturn(Optional.of(owner));
+		given(this.visitService.getVisits(15, 2)).willReturn(vResponses);
 
 		mockMvc.perform(get("/api/owners/{ownerId}/pets/{petId}/visits", 15, 2))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$[0].id").value(visit.getId()))
+			.andExpect(jsonPath("$[0].id").value(1))
 			.andExpect(jsonPath("$[0].date").value("2026-10-11"))
-			.andExpect(jsonPath("$[0].description").value(visit.getDescription()))
-			.andExpect(jsonPath("$[0].petId").value(pet.getId()));
+			.andExpect(jsonPath("$[0].description").value("annual body examiniation."))
+			.andExpect(jsonPath("$[0].petId").value(2));
 
 	}
 
@@ -77,26 +80,21 @@ public class VisitRestControllerTests {
 	 */
 	@Test
 	public void shouldReturnWhenPetExistsWithNoVisits() throws Exception {
-		Owner owner = new Owner();
-		owner.setId(15);
-		owner.setAddress("17888 Linden Ave");
-		owner.setCity("Shoreline");
-		owner.setFirstName("Kate");
-		owner.setLastName("Li");
-		owner.setTelephone("1234567891");
-		Pet pet = new Pet();
-		pet.setBirthDate(LocalDate.of(2026, 1, 1));
+		/*
+		 * Owner owner = new Owner(); owner.setId(15);
+		 * owner.setAddress("17888 Linden Ave"); owner.setCity("Shoreline");
+		 * owner.setFirstName("Kate"); owner.setLastName("Li");
+		 * owner.setTelephone("1234567891"); Pet pet = new Pet();
+		 * pet.setBirthDate(LocalDate.of(2026, 1, 1));
+		 *
+		 * pet.setName("Cola"); PetType cat = new PetType(); cat.setId(1);
+		 * cat.setName("cat"); pet.setType(cat); owner.addPet(pet); pet.setId(2);
+		 */
 
-		pet.setName("Cola");
-		PetType cat = new PetType();
-		cat.setId(1);
-		cat.setName("cat");
-		pet.setType(cat);
-		owner.addPet(pet);
-		pet.setId(2);
-
-		given(this.owners.findById(15)).willReturn(Optional.of(owner));
-		mockMvc.perform(get("/api/owners/{ownerId}/pets/{petId}/visits", 15, 2)).andExpect(status().isOk());
+		given(this.visitService.getVisits(15, 2)).willReturn(List.of());
+		mockMvc.perform(get("/api/owners/{ownerId}/pets/{petId}/visits", 15, 2))
+			.andExpect(status().isOk())
+			.andExpect(content().json("[]"));
 
 	}
 
@@ -105,7 +103,8 @@ public class VisitRestControllerTests {
 	 */
 	@Test
 	public void shouldReturnWhenNoValidOwner() throws Exception {
-		given(this.owners.findById(999)).willReturn(Optional.empty());
+		given(this.visitService.getVisits(999, 2))
+			.willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "owner not found with id 999"));
 		mockMvc.perform(get("/api/owners/{ownerId}/pets/{petId}/visits", 999, 2)).andExpect(status().isNotFound());
 	}
 
@@ -122,8 +121,9 @@ public class VisitRestControllerTests {
 		owner.setLastName("Li");
 		owner.setTelephone("1234567891");
 
-		given(this.owners.findById(15)).willReturn(Optional.of(owner));
-		mockMvc.perform(get("/api/owners/{ownerId}/pets/{petId}/visits", 15, 2)).andExpect(status().isNotFound());
+		given(this.visitService.getVisits(15, 999))
+			.willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "owner not found with id 999"));
+		mockMvc.perform(get("/api/owners/{ownerId}/pets/{petId}/visits", 15, 999)).andExpect(status().isNotFound());
 
 	}
 
@@ -141,44 +141,44 @@ public class VisitRestControllerTests {
 				  "description": "annual body examiniation."
 				}
 				""";
-		Owner owner = new Owner();
-		owner.setId(15);
-		owner.setAddress("17888 Linden Ave");
-		owner.setCity("Shoreline");
-		owner.setFirstName("Kate");
-		owner.setLastName("Li");
-		owner.setTelephone("1234567891");
-		Pet pet = new Pet();
-		pet.setBirthDate(LocalDate.of(2026, 1, 1));
+		/*
+		 * Owner owner = new Owner(); owner.setId(15);
+		 * owner.setAddress("17888 Linden Ave"); owner.setCity("Shoreline");
+		 * owner.setFirstName("Kate"); owner.setLastName("Li");
+		 * owner.setTelephone("1234567891"); Pet pet = new Pet();
+		 * pet.setBirthDate(LocalDate.of(2026, 1, 1));
+		 *
+		 * pet.setName("Cola"); PetType cat = new PetType(); cat.setId(1);
+		 * cat.setName("cat"); pet.setType(cat); owner.addPet(pet); pet.setId(2);
+		 * this.owners.save(owner);
+		 */
 
-		pet.setName("Cola");
-		PetType cat = new PetType();
-		cat.setId(1);
-		cat.setName("cat");
-		pet.setType(cat);
-		owner.addPet(pet);
-		pet.setId(2);
-		this.owners.save(owner);
+		VisitRequest visitRequest = new VisitRequest(LocalDate.of(2026, 10, 11), "annual body examiniation.");
 
-		given(this.owners.findById(15)).willReturn(Optional.of(owner));
+		VisitResponse vResponse = new VisitResponse(1, LocalDate.of(2026, 10, 11), "annual body examiniation.", 2, 15);
 
-		given(this.owners.save(any(Owner.class))).willAnswer(invocation -> {
-			Owner savedOwner = invocation.getArgument(0);
+		given(this.visitService.addVisit(15, 2, visitRequest)).willReturn(vResponse);
 
-			Visit savedVisit = savedOwner.getPet(2).getVisits().iterator().next();
-
-			savedVisit.setId(1);
-
-			return savedOwner;
-		});
+		/*
+		 * given(this.owners.save(any(Owner.class))).willAnswer(invocation -> { Owner
+		 * savedOwner = invocation.getArgument(0);
+		 *
+		 * Visit savedVisit = savedOwner.getPet(2).getVisits().iterator().next();
+		 *
+		 * savedVisit.setId(1);
+		 *
+		 * return savedOwner; });
+		 */
 
 		mockMvc
-			.perform(post("/api/owners/{owerId}/pets/{petId}/visits", 15, 2).contentType(MediaType.APPLICATION_JSON)
+			.perform(post("/api/owners/{ownerId}/pets/{petId}/visits", 15, 2).contentType(MediaType.APPLICATION_JSON)
 				.content(vRequest))
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.date").value("2026-10-11"))
 			.andExpect(jsonPath("$.description").value("annual body examiniation."))
 			.andExpect(jsonPath("$.petId").value(2));
+
+		verify(this.visitService).addVisit(15, 2, visitRequest);
 
 	}
 
@@ -189,33 +189,31 @@ public class VisitRestControllerTests {
 	public void shouldReturnWhenOwnerNoExists() throws Exception {
 		String vRequest = """
 				{
-				  "date": "2024-05-18",
+				  "date": "2024-10-11",
 				  "description": "annual examination."
 				}
 				""";
-		Owner owner = new Owner();
-		owner.setId(15);
-		owner.setAddress("17888 Linden Ave");
-		owner.setCity("Shoreline");
-		owner.setFirstName("Kate");
-		owner.setLastName("Li");
-		owner.setTelephone("1234567891");
-		Pet pet = new Pet();
-		pet.setBirthDate(LocalDate.of(2026, 1, 1));
+		/*
+		 * Owner owner = new Owner(); owner.setId(15);
+		 * owner.setAddress("17888 Linden Ave"); owner.setCity("Shoreline");
+		 * owner.setFirstName("Kate"); owner.setLastName("Li");
+		 * owner.setTelephone("1234567891"); Pet pet = new Pet();
+		 * pet.setBirthDate(LocalDate.of(2026, 1, 1));
+		 *
+		 * pet.setName("Cola"); PetType cat = new PetType(); cat.setId(1);
+		 * cat.setName("cat"); pet.setType(cat);
+		 */
 
-		pet.setName("Cola");
-		PetType cat = new PetType();
-		cat.setId(1);
-		cat.setName("cat");
-		pet.setType(cat);
+		VisitRequest visitRequest = new VisitRequest(LocalDate.of(2024, 10, 11), "annual examination.");
 
-		given(this.owners.findById(999)).willReturn(Optional.empty());
+		given(this.visitService.addVisit(999, 2, visitRequest))
+			.willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND));
 
 		mockMvc
 			.perform(post("/api/owners/{ownerId}/pets/{petId}/visits", 999, 2).contentType(MediaType.APPLICATION_JSON)
 				.content(vRequest))
 			.andExpect(status().isNotFound());
-		verify(this.owners, never()).save(any(Owner.class));
+		// verify(this.owners, never()).save(any(Owner.class));
 	}
 
 	/*
@@ -227,29 +225,25 @@ public class VisitRestControllerTests {
 
 		String vRequest = """
 				{
-				  "date": "2024-05-18",
+				  "date": "2024-10-11",
 				  "description": ""
 				}
 				""";
-		Owner owner = new Owner();
-		owner.setId(15);
-		owner.setAddress("17888 Linden Ave");
-		owner.setCity("Shoreline");
-		owner.setFirstName("Kate");
-		owner.setLastName("Li");
-		owner.setTelephone("1234567891");
-		Pet pet = new Pet();
-		pet.setBirthDate(LocalDate.of(2026, 1, 1));
+		/*
+		 * Owner owner = new Owner(); owner.setId(15);
+		 * owner.setAddress("17888 Linden Ave"); owner.setCity("Shoreline");
+		 * owner.setFirstName("Kate"); owner.setLastName("Li");
+		 * owner.setTelephone("1234567891"); Pet pet = new Pet();
+		 * pet.setBirthDate(LocalDate.of(2026, 1, 1));
+		 *
+		 * pet.setName("Cola"); PetType cat = new PetType(); cat.setId(1);
+		 * cat.setName("cat"); pet.setType(cat); owner.addPet(pet); pet.setId(2);
+		 */
 
-		pet.setName("Cola");
-		PetType cat = new PetType();
-		cat.setId(1);
-		cat.setName("cat");
-		pet.setType(cat);
-		owner.addPet(pet);
-		pet.setId(2);
+		VisitRequest visitRequest = new VisitRequest(LocalDate.of(2024, 10, 11), "");
 
-		given(this.owners.findById(15)).willReturn(Optional.of(owner));
+		given(this.visitService.addVisit(15, 2, visitRequest))
+			.willThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST));
 
 		mockMvc
 			.perform(post("/api/owners/{ownerId}/pets/{petId}/visits", 15, 2).contentType(MediaType.APPLICATION_JSON)
@@ -267,26 +261,27 @@ public class VisitRestControllerTests {
 
 		String vRequest = """
 				{
-				  "date": "2024-05-18",
+				  "date": "2024-10-11",
 				  "description": "annual examination."
 				}
 				""";
-		Owner owner = new Owner();
-		owner.setId(15);
-		owner.setAddress("17888 Linden Ave");
-		owner.setCity("Shoreline");
-		owner.setFirstName("Kate");
-		owner.setLastName("Li");
-		owner.setTelephone("1234567891");
+		/*
+		 * Owner owner = new Owner(); owner.setId(15);
+		 * owner.setAddress("17888 Linden Ave"); owner.setCity("Shoreline");
+		 * owner.setFirstName("Kate"); owner.setLastName("Li");
+		 * owner.setTelephone("1234567891");
+		 */
 
-		given(this.owners.findById(15)).willReturn(Optional.of(owner));
+		VisitRequest visitRequest = new VisitRequest(LocalDate.of(2024, 10, 11), "annual examination.");
 
+		given(this.visitService.addVisit(15, 999, visitRequest))
+			.willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND));
 		mockMvc
-			.perform(post("/api/owners/{ownerId}/pets/{petId}/visits", 15, 2).contentType(MediaType.APPLICATION_JSON)
+			.perform(post("/api/owners/{ownerId}/pets/{petId}/visits", 15, 999).contentType(MediaType.APPLICATION_JSON)
 				.content(vRequest))
 			.andExpect(status().isNotFound());
 
-		verify(this.owners, never()).save(any(Owner.class));
+		verify(this.visitService).addVisit(15, 999, visitRequest);
 
 	}
 

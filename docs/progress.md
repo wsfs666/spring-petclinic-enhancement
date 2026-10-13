@@ -261,3 +261,42 @@ All current tests are passing.
 
 
 
+
+
+2026-10-11 PetClinic Progress
+
+已完成：
+- 完成 Owner DELETE API
+- 完成 Pet DELETE API
+- 完成对应 DELETE controller tests
+- 完成 Visit GET API
+- 完成 Visit POST API
+- 完成 Visit controller tests
+- VisitRestControllerTests: 8/8 passed
+
+未完成：
+- Integration tests 留到后续阶段
+
+Blocker：
+- 无
+
+关键理解：
+- CascadeType.ALL 包含 REMOVE，可将删除操作从 Owner → Pet → Visit 向下传播
+- orphanRemoval 和 cascade REMOVE 的作用不同
+- Mockito 的 `save()` 不会真正执行数据库 generated ID
+- `willReturn()` 只返回预设对象；`willAnswer()` 可以模拟 save 时给新 Visit 设置 ID
+- null Integer 自动拆箱成 int 会导致 NullPointerException
+- Controller test 验证 HTTP/controller 行为；真实 persistence/cascade 行为后续用 integration test 验证
+
+Evidence：
+- Owner/Pet DELETE controller tests: PASS
+- VisitRestControllerTests: 8 tests, 0 failures, 0 errors, 0 skipped
+- BUILD SUCCESS
+- Commit: finished 
+- GitHub push: finished 
+- Full regression: finished 
+
+
+
+
+
