@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.server.ResponseStatusException;
 
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
 import org.springframework.data.domain.Page;
@@ -65,6 +66,7 @@ public class PetRestController {
 	}
 
 	// create a new pet /api/owners/{ownerId}/pets}
+	@Transactional
 	@PostMapping("/{ownerId}/pets")
 	public ResponseEntity<PetResponse> createNewPet(@PathVariable int ownerId,
 			@Valid @RequestBody PetRequest petRequest) {
@@ -80,7 +82,8 @@ public class PetRestController {
 		pet.setType(curPetType);
 		owner.addPet(pet);
 
-		this.owners.save(owner);
+		// this.owners.save(owner);
+		this.owners.flush();
 
 		PetResponse petResponse = new PetResponse(pet.getId(), petRequest.petName(), petRequest.birthDate(),
 				curPetType.getId(), curPetType.getName(), ownerId);
