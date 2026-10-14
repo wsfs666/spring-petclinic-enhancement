@@ -300,3 +300,122 @@ Evidence：
 
 
 
+
+# 2026-10-12 Progress
+
+## Main Goal
+
+Built real Spring Boot integration tests for Visit REST APIs and introduced a Service layer to establish a proper JPA transaction boundary.
+
+## Completed
+
+### 1. Visit Integration Test Environment
+
+Created `VisitIntegrationTests` using:
+
+- `@SpringBootTest`
+- `@AutoConfigureMockMvc`
+- real `MockMvc`
+- real Spring Data JPA repositories
+- H2 test database
+
+Verified the full application path:
+
+`MockMvc -> Controller -> Service -> Repository -> Hibernate/JPA -> H2`
+
+Confirmed that real JPA persistence generates entity IDs automatically instead of requiring manually assigned IDs as in Mockito-based controller tests.
+
+### 2. Visit GET / POST Integration Tests
+
+Completed integration tests for:
+
+- `GET /api/owners/{ownerId}/pets/{petId}/visits`
+- `POST /api/owners/{ownerId}/pets/{petId}/visits`
+
+Verified:
+
+- real database reads
+- real database writes
+- generated Owner / Pet / Visit IDs
+- correct HTTP status codes
+- correct Visit response fields
+
+### 3. Discovered JPA Persistence Lifecycle Issue
+
+Integration testing exposed a problem that the existing `@WebMvcTest` + Mockito tests could not detect.
+
+Observed:
+
+- `saveAndFlush(owner)` successfully persisted the new Visit
+- the managed copy contained a generated Visit ID
+- the original `visit` object still had `id == null`
+
+Debugging confirmed:
+
+- original `Owner` / `Pet` objects and returned managed copies were different Java objects
+- the saved Visit received a real database-generated ID
+- the original transient Visit did not receive that ID when the detached entity graph was merged
+
+Key concepts learned:
+
+- managed vs detached entities
+- `persist()` vs `merge()`
+- `save()` vs `saveAndFlush()` vs `flush()`
+- cascade persistence
+- dirty checking
+- generated IDs
+- persistence context
+
+### 4. Added Transaction Boundary
+
+Introduced `@Transactional` to keep the complete Visit create operation inside one persistence context:
+
+`find Owner -> find Pet -> add Visit -> flush -> generated Visit ID`
+
+This allowed the newly created Visit to remain managed and receive its generated ID before constructing the response.
+
+For read operations, identified `@Transactional(readOnly = true)` as the appropriate Service-layer transaction boundary when traversing entity relationships.
+
+### 5. Introduced VisitService
+
+Created a dedicated `VisitService` under the Owner feature package.
+
+Architecture changed from:
+
+`VisitRestController -> OwnerRepository`
+
+to:
+
+`VisitRestController -> VisitService -> OwnerRepository`
+
+Responsibilities are now separated:
+
+- Controller: HTTP mapping, request/response handling
+- Service: business flow and transaction boundary
+- Repository: persistence
+
+### 6. Refactored Visit Controller Tests
+
+Updated `VisitRestControllerTests` to mock `VisitService` instead of `OwnerRepository`.
+
+Controller tests now focus on:
+
+- URL / path variables
+- request binding
+- validation
+- HTTP status
+- JSON response
+- correct Service invocation
+
+Removed the need to manually construct full Owner/Pet entity graphs or simulate generated IDs with Mockito `willAnswer()`.
+
+Also confirmed the semantic distinction:
+
+- Owner missing -> `404`
+- Pet missing -> `404`
+- Pet exists but has no Visits -> `200 OK` with `[]`
+
+
+
+
+

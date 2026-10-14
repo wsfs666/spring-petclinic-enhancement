@@ -10,6 +10,10 @@ Run command: ./mvnw spring-boot:run
 
 Test command: ./mvnw clean verify
 
+Run with flyway postgresql support: ./mvnw spring-boot:run -Dspring-boot.run.profiles=postgres
+
+formatting command: ./mvnw spring-javaformat:apply
+
 Baseline tests:
 - Passed:56
 - Failed:0
