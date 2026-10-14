@@ -10,6 +10,8 @@ Run command: ./mvnw spring-boot:run
 
 Test command: ./mvnw clean verify
 
+single Test file commnad: ./mvnw -Dtest=PetPostgresIntegrationTests test
+
 Run with flyway postgresql support: ./mvnw spring-boot:run -Dspring-boot.run.profiles=postgres
 
 formatting command: ./mvnw spring-javaformat:apply

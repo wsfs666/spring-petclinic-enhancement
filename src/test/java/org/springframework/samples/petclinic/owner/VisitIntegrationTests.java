@@ -9,19 +9,31 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.LocalDate;
 
+import org.flywaydb.database.postgresql.PostgreSQLConnection;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.samples.petclinic.PetClinicApplication;
 import org.springframework.samples.petclinic.owner.Service.VisitService;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
 
+@Testcontainers
 @SpringBootTest
 @AutoConfigureMockMvc
-
+@ActiveProfiles("postgres")
 public class VisitIntegrationTests {
+
+	@Container
+	@ServiceConnection
+
+	static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.3");
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -31,6 +43,9 @@ public class VisitIntegrationTests {
 
 	@Autowired
 	private VisitService visitService;
+
+	@Autowired
+	private PetTypeRepository petTypes;
 
 	@Test
 	void contextLoads() {
@@ -48,7 +63,9 @@ public class VisitIntegrationTests {
 
 		Owner savedOwner = this.owners.save(owner);
 
-		assertThat(savedOwner.getId()).isNotNull();
+		Owner persistOwner = this.owners.findById(savedOwner.getId()).orElseThrow();
+
+		assertThat(persistOwner.getId()).isNotNull();
 
 		mockMvc.perform(get("/api/owners/{ownerId}", savedOwner.getId())).andExpect(status().isOk());
 
@@ -80,20 +97,20 @@ public class VisitIntegrationTests {
 		Pet pet = new Pet();
 		pet.setBirthDate(LocalDate.of(2026, 1, 1));
 		pet.setName("Cola");
-		PetType cat = new PetType();
-		cat.setId(1);
-		cat.setName("cat");
+		PetType cat = this.petTypes.findById(1).orElseThrow();
 		pet.setType(cat);
 		owner.addPet(pet);
 
-		Owner savedOwner = this.owners.save(owner);
+		Owner savedOwner = this.owners.saveAndFlush(owner);
 
-		VisitRequest visitRequest = new VisitRequest(LocalDate.of(2026, 10, 11), "annual body examiniation.");
+		Owner persisOwner = this.owners.findById(savedOwner.getId()).orElseThrow();
 
-		this.visitService.addVisit(savedOwner.getId(), pet.getId(), visitRequest);
+		// no need use add function , add by restAPI method and will call add service
+		// function
 
-		// assertThat(savedOwner.getId()).isNotNull();
-		// assertThat(pet.getId()).isNotNull();
+		assertThat(persisOwner.getId()).isNotNull();
+		assertThat(pet.getId()).isNotNull();
+		assertThat(persisOwner.getCity()).isEqualTo("Shoreline");
 
 		mockMvc
 			.perform(post("/api/owners/{ownerId}/pets/{petId}/visits", savedOwner.getId(), pet.getId())
@@ -124,27 +141,23 @@ public class VisitIntegrationTests {
 		pet.setBirthDate(LocalDate.of(2026, 1, 1));
 
 		pet.setName("Cola");
-		PetType cat = new PetType();
-		cat.setId(1);
-		cat.setName("cat");
+		PetType cat = this.petTypes.findById(1).orElseThrow();
 		pet.setType(cat);
 
-		Visit visit = new Visit();
-		visit.setDate(LocalDate.of(2026, 10, 11));
-		visit.setDescription("annual body examiniation.");
-
-		pet.addVisit(visit);
 		owner.addPet(pet);
 
-		Owner savedOwner = this.owners.save(owner);
+		Owner savedOwner = this.owners.saveAndFlush(owner);
 
 		VisitRequest visitRequest = new VisitRequest(LocalDate.of(2026, 10, 11), "annual body examiniation.");
 
+		// add first then can retrive
 		this.visitService.addVisit(savedOwner.getId(), pet.getId(), visitRequest);
 
-		// assertThat(savedOwner.getId()).isNotNull();
-		// assertThat(pet.getId()).isNotNull();
-		// assertThat(visit.getId()).isNotNull();
+		Owner persisOwner = this.owners.findById(savedOwner.getId()).orElseThrow();
+
+		assertThat(persisOwner.getId()).isNotNull();
+		assertThat(pet.getId()).isNotNull();
+		assertThat(persisOwner.getCity()).isEqualTo("Shoreline");
 
 		mockMvc.perform(get("/api/owners/{ownerId}/pets/{petId}/visits", savedOwner.getId(), pet.getId()))
 			.andExpect(status().isOk())
