@@ -1,0 +1,153 @@
+PetClinic Performance Baseline
+Date: 2026-10-15
+
+Environment:
+- Java 17
+- Spring Boot 4
+- PostgreSQL 18.3
+- PostgreSQL running via Docker Compose
+- Load generator: hey
+- Local development machine
+
+Target:
+GET http://localhost:8080/api/owners/11
+
+==================================================
+Initial short run
+==================================================
+
+
+
+
+command: hey -z 10s -c 10 http://localhost:8080/api/owners/11
+
+Summary:
+  Total:        10.0011 secs
+  Slowest:      0.0806 secs
+  Fastest:      0.0010 secs
+  Average:      0.0018 secs
+  Requests/sec: 5429.2849
+  
+
+Response time histogram:
+  0.001 [1]     |
+  0.009 [54233] |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.017 [29]    |
+  0.025 [16]    |
+  0.033 [6]     |
+  0.041 [0]     |
+  0.049 [4]     |
+  0.057 [0]     |
+  0.065 [0]     |
+  0.073 [0]     |
+  0.081 [10]    |
+
+
+Latency distribution:
+  10%% in 0.0015 secs
+  25%% in 0.0016 secs
+  50%% in 0.0018 secs
+  75%% in 0.0019 secs
+  90%% in 0.0021 secs
+  95%% in 0.0023 secs
+  99%% in 0.0032 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:   0.0000 secs, 0.0000 secs, 0.0062 secs
+  DNS-lookup:   0.0000 secs, 0.0000 secs, 0.0027 secs
+  req write:    0.0000 secs, 0.0000 secs, 0.0016 secs
+  resp wait:    0.0018 secs, 0.0010 secs, 0.0703 secs
+  resp read:    0.0000 secs, 0.0000 secs, 0.0019 secs
+
+Status code distribution:
+  [200] 54299 responses
+
+
+
+command: hey -z 10s -c 10 http://localhost:8080/api/owners/11
+
+Summary:
+  Total:        10.0011 secs
+  Slowest:      0.0255 secs
+  Fastest:      0.0007 secs
+  Average:      0.0018 secs
+  Requests/sec: 5436.8261
+  
+
+Response time histogram:
+  0.001 [1]     |
+  0.003 [53955] |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.006 [361]   |
+  0.008 [35]    |
+  0.011 [12]    |
+  0.013 [0]     |
+  0.016 [0]     |
+  0.018 [0]     |
+  0.021 [0]     |
+  0.023 [0]     |
+  0.026 [10]    |
+
+
+Latency distribution:
+  10%% in 0.0015 secs
+  25%% in 0.0016 secs
+  50%% in 0.0018 secs
+  75%% in 0.0020 secs
+  90%% in 0.0022 secs
+  95%% in 0.0025 secs
+  99%% in 0.0031 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:   0.0000 secs, 0.0000 secs, 0.0046 secs
+  DNS-lookup:   0.0000 secs, 0.0000 secs, 0.0021 secs
+  req write:    0.0000 secs, 0.0000 secs, 0.0012 secs
+  resp wait:    0.0018 secs, 0.0007 secs, 0.0150 secs
+  resp read:    0.0000 secs, 0.0000 secs, 0.0022 secs
+
+Status code distribution:
+  [200] 54374 responses
+
+
+command: hey -z 10s -c 10 http://localhost:8080/api/owners/11
+
+Summary:
+  Total:        10.0014 secs
+  Slowest:      0.0160 secs
+  Fastest:      0.0009 secs
+  Average:      0.0019 secs
+  Requests/sec: 5359.5499
+  
+
+Response time histogram:
+  0.001 [1]     |
+  0.002 [49780] |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.004 [3661]  |■■■
+  0.005 [129]   |
+  0.007 [22]    |
+  0.008 [0]     |
+  0.010 [0]     |
+  0.011 [0]     |
+  0.013 [0]     |
+  0.014 [0]     |
+  0.016 [10]    |
+
+
+Latency distribution:
+  10%% in 0.0015 secs
+  25%% in 0.0016 secs
+  50%% in 0.0018 secs
+  75%% in 0.0020 secs
+  90%% in 0.0023 secs
+  95%% in 0.0026 secs
+  99%% in 0.0032 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:   0.0000 secs, 0.0000 secs, 0.0055 secs
+  DNS-lookup:   0.0000 secs, 0.0000 secs, 0.0027 secs
+  req write:    0.0000 secs, 0.0000 secs, 0.0024 secs
+  resp wait:    0.0018 secs, 0.0008 secs, 0.0074 secs
+  resp read:    0.0000 secs, 0.0000 secs, 0.0025 secs
+
+Status code distribution:
+  [200] 53603 responses
+

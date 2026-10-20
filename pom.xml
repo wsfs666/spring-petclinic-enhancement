@@ -123,6 +123,12 @@
     <scope>test</scope>
 </dependency>
 <!--     -->
+<!--  add actuator dependency-->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+<!--   -->
     <dependency>
       <groupId>org.webjars</groupId>
       <artifactId>webjars-locator-lite</artifactId>

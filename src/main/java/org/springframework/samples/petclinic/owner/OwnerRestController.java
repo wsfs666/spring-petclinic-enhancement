@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.samples.petclinic.owner.Service.OwnerService;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -29,8 +30,11 @@ public class OwnerRestController {
 
 	private final OwnerRepository owners;
 
-	public OwnerRestController(OwnerRepository owners) {
+	private final OwnerService ownerService;
+
+	public OwnerRestController(OwnerRepository owners, OwnerService ownerService) {
 		this.owners = owners;
+		this.ownerService = ownerService;
 	}
 
 	@GetMapping("/{ownerId}")
@@ -42,7 +46,7 @@ public class OwnerRestController {
 		Owner owner = optionalOwner.orElseThrow(
 				() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Owner not found with id: " + ownerId));
 		OwnerResponse ownerResponse = new OwnerResponse(owner.getAddress(), owner.getCity(), owner.getTelephone(),
-				owner.getFirstName(), owner.getLastName(), owner.getId());
+				owner.getFirstName(), owner.getLastName(), owner.getId(), owner.getVersion());
 
 		return ownerResponse;
 
@@ -57,8 +61,9 @@ public class OwnerRestController {
 		Pageable pageable = PageRequest.of(page - 1, pageSize);
 
 		Page<Owner> ownersPage = this.owners.findByLastNameStartingWith(lastName, pageable);
-		Page<OwnerResponse> responsesPage = ownersPage.map(owner -> new OwnerResponse(owner.getAddress(),
-				owner.getCity(), owner.getTelephone(), owner.getFirstName(), owner.getLastName(), owner.getId()));
+		Page<OwnerResponse> responsesPage = ownersPage
+			.map(owner -> new OwnerResponse(owner.getAddress(), owner.getCity(), owner.getTelephone(),
+					owner.getFirstName(), owner.getLastName(), owner.getId(), owner.getVersion()));
 		// Page inherited methods from Streamable interface
 		// it Returns a new Page with the content of the current one mapped by the map
 		// function
@@ -82,7 +87,8 @@ public class OwnerRestController {
 		Owner savedOwner = this.owners.save(owner); // will return entity with updated id
 
 		OwnerResponse ownerResponse = new OwnerResponse(savedOwner.getAddress(), savedOwner.getCity(),
-				owner.getTelephone(), savedOwner.getFirstName(), savedOwner.getLastName(), savedOwner.getId());
+				owner.getTelephone(), savedOwner.getFirstName(), savedOwner.getLastName(), savedOwner.getId(),
+				savedOwner.getVersion());
 
 		// get location and show 201 code
 		URI location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -96,25 +102,37 @@ public class OwnerRestController {
 
 	@PutMapping("/{ownerId}")
 	public ResponseEntity<OwnerResponse> updateOwner(@PathVariable("ownerId") int ownerId,
-			@Valid @RequestBody CreateOwnerRequest createOwnerRequest) {
+			@Valid @RequestBody UpdateOwnerRequest updateOwnerRequest) {
 
-		Optional<Owner> optionalOwner = this.owners.findById(ownerId);
-		Owner owner = optionalOwner.orElseThrow(
-				() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Owner not found with id: " + ownerId));
+		/*
+		 *
+		 * Optional<Owner> optionalOwner = this.owners.findById(ownerId); Owner owner =
+		 * optionalOwner.orElseThrow( () -> new
+		 * ResponseStatusException(HttpStatus.NOT_FOUND, "Owner not found with id: " +
+		 * ownerId));
+		 *
+		 * owner.setAddress(createOwnerRequest.address());
+		 * owner.setCity(createOwnerRequest.city());
+		 * owner.setFirstName(createOwnerRequest.firstName());
+		 * owner.setLastName(createOwnerRequest.lastName());
+		 * owner.setTelephone(createOwnerRequest.telephone());
+		 *
+		 *
+		 * Owner savedOwner = this.owners.save(owner); // update entity in repository use
+		 * save()
+		 *
+		 * OwnerResponse ownerResponse = new OwnerResponse(savedOwner.getAddress(),
+		 * savedOwner.getCity(), savedOwner.getTelephone(), savedOwner.getFirstName(),
+		 * savedOwner.getLastName(), savedOwner.getId(),savedOwner.getVersion());
+		 *
+		 * return ResponseEntity.ok(ownerResponse);
+		 *
+		 */
 
-		owner.setAddress(createOwnerRequest.address());
-		owner.setCity(createOwnerRequest.city());
-		owner.setFirstName(createOwnerRequest.firstName());
-		owner.setLastName(createOwnerRequest.lastName());
-		owner.setTelephone(createOwnerRequest.telephone());
+		// based on concurrency sceanario to revise code
 
-		Owner savedOwner = this.owners.save(owner);
-		// update entity in repository use save()
-
-		OwnerResponse ownerResponse = new OwnerResponse(savedOwner.getAddress(), savedOwner.getCity(),
-				savedOwner.getTelephone(), savedOwner.getFirstName(), savedOwner.getLastName(), savedOwner.getId());
-
-		return ResponseEntity.ok(ownerResponse);
+		OwnerResponse ownerResponse = ownerService.updateOwner(ownerId, updateOwnerRequest);
+		return ResponseEntity.status(HttpStatus.OK).body(ownerResponse);
 
 	}
 

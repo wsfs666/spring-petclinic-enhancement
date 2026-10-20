@@ -10,7 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.handler.HandlerExceptionResolverComposite;
+
 import org.springframework.http.MediaType;
+import org.springframework.samples.petclinic.owner.Service.OwnerService;
 
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -32,6 +36,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
 @WebMvcTest(OwnerRestController.class)
 // When you use @WebMvcTest, it only loads the web layer (the controller, filters, etc.),
 // not the entire application context. This makes the tests run faster
@@ -48,6 +55,10 @@ public class OwnerRestControllerTests {
 	// @MockitoBean is an annotation that can be used in test classes to override a bean
 	// in the test's ApplicationContext with a Mockito mock.
 	private OwnerRepository owners;
+
+	@MockitoBean
+
+	private OwnerService ownerService;
 
 	@Test
 	// @Test: Indicated that the method is a test case.
@@ -167,11 +178,15 @@ public class OwnerRestControllerTests {
 				  "lastName": "Smith",
 				  "address": "123 Main St",
 				  "city": "Seattle",
-				  "telephone": "1234567890"
+				  "telephone": "1234567890",
+				  "version": 0
 				}
 				""";
 
-		given(this.owners.findById(999)).willReturn(Optional.empty());
+		// given(this.owners.findById(999)).willReturn(Optional.empty());
+		given(this.ownerService.updateOwner(eq(999), any(UpdateOwnerRequest.class)))
+			.willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "owner not found"));
+
 		mockMvc.perform(put("/api/owners/{ownerId}", 999).contentType(MediaType.APPLICATION_JSON).content(requestBody))
 			.andExpect(status().isNotFound());
 
