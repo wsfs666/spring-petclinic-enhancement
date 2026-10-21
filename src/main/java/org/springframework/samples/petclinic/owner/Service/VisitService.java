@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.samples.petclinic.owner.Owner;
 import org.springframework.samples.petclinic.owner.OwnerRepository;
 import org.springframework.samples.petclinic.owner.Pet;
+import org.springframework.samples.petclinic.owner.PetVisitHistoryResult;
 import org.springframework.samples.petclinic.owner.Visit;
 import org.springframework.samples.petclinic.owner.VisitRequest;
 import org.springframework.samples.petclinic.owner.VisitResponse;
@@ -82,6 +83,31 @@ public class VisitService {
 				petId, ownerId);
 
 		return visitResponse;
+
+	}
+
+	@Transactional(readOnly = true)
+	public PetVisitHistoryResult getVisitsByPetId(int petId) {
+
+		Optional<Owner> opOwner = this.owners.findOwnerByPetId(petId);
+		Owner owner = opOwner
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "pet not found with petId" + petId));
+
+		Pet pet = owner.getPet(petId);
+
+		String petName = pet.getName();
+
+		Collection<Visit> visits = pet.getVisits();
+
+		List<VisitResponse> visitResponses = new ArrayList<>();
+
+		for (Visit visit : visits) {
+			VisitResponse vResponse = new VisitResponse(visit.getId(), visit.getDate(), visit.getDescription(), petId,
+					owner.getId());
+			visitResponses.add(vResponse);
+		}
+
+		return new PetVisitHistoryResult(petId, petName, visitResponses);
 
 	}
 
