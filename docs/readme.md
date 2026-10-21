@@ -117,3 +117,106 @@ The benchmark measures request throughput, latency percentiles, and HTTP respons
 
 
 
+
+
+## 10.Python API Probe
+
+A lightweight Python CLI is included for repeatable runtime validation of PetClinic REST APIs. The tool sends sequential read-only HTTP requests, records request latency and HTTP status, classifies failures, and writes each result as a JSONL record.
+
+### Structure
+
+```text
+scripts/
+└── api_probe/
+    ├── __init__.py
+    ├── __main__.py
+    ├── client.py
+    ├── runner.py
+    └── report.py
+
+tests/
+└── python/
+    └── test_api_probe.py
+```
+
+### Setup
+
+Create and activate a Python virtual environment from the repository root:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Install the HTTP client dependency:
+
+```bash
+python -m pip install requests
+```
+
+The `.venv/` directory should not be committed to Git.
+
+### Usage
+
+Start the PetClinic application, then run the probe from the repository root:
+
+```bash
+python -m scripts.api_probe \
+  --base-url http://localhost:8080 \
+  --count 10 \
+  --timeout 2 \
+  --output api-probe.jsonl
+```
+
+Arguments:
+
+- `--base-url`: Base URL of the PetClinic service.
+- `--count`: Number of sequential requests to execute.
+- `--timeout`: Per-request timeout in seconds.
+- `--output`: Path of the generated JSONL report.
+
+The current probe targets a read-only PetClinic REST endpoint and intentionally executes requests sequentially rather than using asynchronous or concurrent request execution.
+
+### Output
+
+Each request produces one JSON object on a separate line:
+
+```json
+{"status": 200, "latency_ms": 4.32, "success": true, "error_type": null}
+{"status": 404, "latency_ms": 3.91, "success": false, "error_type": "http_4xx"}
+{"status": null, "latency_ms": 1.02, "success": false, "error_type": "connection_error"}
+{"status": null, "latency_ms": 1001.14, "success": false, "error_type": "timeout"}
+```
+
+Failure classification:
+
+- HTTP `2xx–3xx` → successful request
+- HTTP `4xx` → `http_4xx`
+- HTTP `5xx` → `http_5xx`
+- Connection failure → `connection_error`
+- Request timeout → `timeout`
+
+HTTP errors and network failures are retained in the report rather than terminating the complete probe run.
+
+### Tests
+
+Python unit tests mock the underlying HTTP client so they do not require a running PetClinic application.
+
+Run the tests from the repository root:
+
+```bash
+python -m unittest discover \
+  -s tests/python \
+  -p "test_api_probe.py"
+```
+
+Current unit-test coverage includes:
+
+- Successful HTTP response
+- HTTP 4xx response
+- Connection failure
+- Request timeout
+
+
+
+
