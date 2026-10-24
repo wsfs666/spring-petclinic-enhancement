@@ -3,6 +3,8 @@ package org.springframework.samples.petclinic.ai.tool;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.http.HttpStatus;
 import org.springframework.samples.petclinic.owner.Owner;
 import org.springframework.samples.petclinic.owner.Pet;
@@ -21,7 +23,8 @@ public class PetVisitHistoryTool {
 		this.visitService = visitService;
 	}
 
-	public PetVisitHistoryResult getPetVisitHistory(int petId) {
+	@Tool(description = "Get the visit history for a specific pet using its pet ID")
+	public PetVisitHistoryResult getPetVisitHistory(@ToolParam(description = "The unique ID of the pet") int petId) {
 
 		PetVisitHistoryResult result = this.visitService.getVisitsByPetId(petId);
 
