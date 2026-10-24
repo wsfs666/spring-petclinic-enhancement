@@ -37,12 +37,34 @@
     <spring-format.version>0.0.47</spring-format.version>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-bom</artifactId>
+            <version>2.0.1</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
   <dependencies>
     <!-- Spring and Spring Boot dependencies -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+    <!-- Spring AI dependency-->
+    <dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+    <dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-retry</artifactId>
+</dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-cache</artifactId>
@@ -93,6 +115,42 @@
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
     </dependency>
+    <!-- add flyway dependency -->  
+    <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-flyway</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-database-postgresql</artifactId>
+</dependency>
+ <!--  -->  
+ <!-- add testcontainer dependency-->
+ <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-testcontainers</artifactId>
+    <scope>test</scope>
+</dependency>
+
+<dependency>
+    <groupId>org.testcontainers</groupId>
+    <artifactId>testcontainers-postgresql</artifactId>
+    <scope>test</scope>
+</dependency>
+
+<dependency>
+    <groupId>org.testcontainers</groupId>
+    <artifactId>testcontainers-junit-jupiter</artifactId>
+    <scope>test</scope>
+</dependency>
+<!--     -->
+<!--  add actuator dependency-->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+<!--   -->
     <dependency>
       <groupId>org.webjars</groupId>
       <artifactId>webjars-locator-lite</artifactId>
@@ -222,7 +280,7 @@
               <configLocation>src/checkstyle/nohttp-checkstyle.xml</configLocation>
               <sourceDirectories>${basedir}</sourceDirectories>
               <includes>**/*</includes>
-              <excludes>**/.git/**/*,**/.idea/**/*,**/target/**/,**/.flattened-pom.xml,**/*.class</excludes>
+              <excludes>**/.git/**/*,**/.idea/**/*,**/target/**/,**/.flattened-pom.xml,**/*.class,**/.venv/**/*</excludes>
               <propertyExpansion>config_loc=${basedir}/src/checkstyle/</propertyExpansion>
             </configuration>
           </execution>

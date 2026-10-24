@@ -20,6 +20,10 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Repository class for <code>Owner</code> domain objects. All method names are compliant
@@ -58,5 +62,13 @@ public interface OwnerRepository extends JpaRepository<Owner, Integer> {
 	 * input for id)
 	 */
 	Optional<Owner> findById(Integer id);
+
+	@Query("""
+			SELECT DISTINCT o
+			FROM Owner o
+			JOIN o.pets p
+			WHERE p.id = :petId
+			""")
+	Optional<Owner> findOwnerByPetId(@Param("petId") int petId);
 
 }
