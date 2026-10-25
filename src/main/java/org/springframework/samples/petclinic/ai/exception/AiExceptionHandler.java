@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import org.springframework.ai.retry.TransientAiException;
+import org.springframework.ai.tool.execution.ToolExecutionException;
 
 import java.net.SocketTimeoutException;
 
@@ -46,6 +47,11 @@ public class AiExceptionHandler {
 		}
 
 		return false;
+	}
+
+	@ExceptionHandler(ToolExecutionException.class)
+	public ResponseEntity<String> handleToolException(ToolExecutionException ex) {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("AI service requests failed");
 	}
 
 }
