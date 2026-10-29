@@ -71,4 +71,7 @@ public interface OwnerRepository extends JpaRepository<Owner, Integer> {
 			""")
 	Optional<Owner> findOwnerByPetId(@Param("petId") int petId);
 
+	@Query("SELECT p FROM Pet p WHERE p.id = :petId")
+	Optional<Pet> findPetById(@Param("petId") Integer petId);
+
 }
