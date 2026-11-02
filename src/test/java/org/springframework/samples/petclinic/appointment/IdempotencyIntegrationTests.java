@@ -4,9 +4,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeEditor;
 import org.springframework.samples.petclinic.owner.Owner;
 import org.springframework.samples.petclinic.owner.OwnerRepository;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Container;
@@ -28,13 +30,20 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import javax.print.attribute.standard.Media;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -67,6 +76,9 @@ public class IdempotencyIntegrationTests {
 
 	@Autowired
 	private AppointmentRepository appointments;
+
+	@MockitoSpyBean
+	private AppointmentService aService;
 
 	/*
 	 * test1 POST /api/pets/1/appointments Idempotency-Key:
@@ -113,14 +125,16 @@ public class IdempotencyIntegrationTests {
 	/*
 	 * test2 测试相同 Key、相同 Payload 同一个测试中连续发送两次 这里预期第二次仍是 201，因为你当前 Controller 固定返回 CREATED。
 	 *
-	 *
+	 * The duplicate-request test also covers the server-side recovery behavior for a
+	 * lost-response scenario. Once the first transaction commits, retrying with the same
+	 * idempotency key returns the existing appointment without creating a duplicate.
 	 *
 	 *
 	 *
 	 */
 
 	@Test
-	public void shouldReturnWhenDoubleCreateAppointment() throws Exception {
+	public void shouldReturnExistingAppointmentWhenSameKeyRetried() throws Exception {
 
 		// mock
 		int petId = 2;
@@ -344,6 +358,76 @@ public class IdempotencyIntegrationTests {
 			executor.shutdown();
 
 		}
+
+	}
+
+	/*
+	 * test6
+	 *
+	 * Failure Before Commit: inject failture after writing new receipt and new
+	 * appointment in table and before transaction committing
+	 *
+	 * POST /api/pets/1/appointments
+	 *
+	 *
+	 *
+	 *
+	 *
+	 */
+
+	@Test
+	public void shouldReturnWhenFailureInjection() throws Exception {
+
+		int petId = 2;
+		UUID key = UUID.randomUUID();
+		AppointmentSlot slot = new AppointmentSlot();
+		slot.setStartAt(LocalDateTime.of(2026, 11, 1, 11, 35));
+		slot.setEndAt(slot.getStartAt().plusMinutes(30));
+		AppointmentSlot savedSlot = this.slots.saveAndFlush(slot);
+
+		AppointmentRequest request = new AppointmentRequest(savedSlot.getId());
+		Owner owner = this.owners.findOwnerByPetId(petId).orElseThrow();
+		String operation = "CREATE_APPOINTMENT";
+
+		/**
+		 * doAnswer when: 我关心它如何执行，以及在执行到哪里时失败。 when ReturnThrow: 一执行方法就抛出异常，但是我们需要执行完再抛出
+		 *
+		 *
+		 *
+		 *
+		 */
+		doAnswer(invocation -> {
+			invocation.callRealMethod();
+			throw new RuntimeException("inject failure");
+		}).when(this.aService).createAppointment(eq(petId), any(AppointmentRequest.class));
+
+		assertThatThrownBy(() -> mockMvc
+			.perform(post("/api/pets/{petId}/appointments", petId).header("Idempotency-Key", key.toString())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request))))
+			.hasStackTraceContaining("failure");
+
+		long appoint_cnt = this.appointments.countBySlot_IdAndStatus(savedSlot.getId(), AppointmentStatus.CONFIRMED);
+
+		assertThat(appoint_cnt).isZero();
+
+		long receipt_cnt = this.receipts.countByPrincipalIdAndOperationAndIdempotencyKey(owner.getId(), operation, key);
+
+		assertThat(receipt_cnt).isZero();
+
+		/*
+		 * test7 failure recovery: cancel failure rejection->same Key K1 + same Pet + same
+		 * Slot → 201
+		 */
+
+		// cancel rejection
+		doCallRealMethod().when(this.aService).createAppointment(eq(petId), any(AppointmentRequest.class));
+
+		mockMvc
+			.perform(post("/api/pets/{petId}/appointments", petId).header("Idempotency-Key", key.toString())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request)))
+			.andExpect(status().isCreated());
 
 	}
 
