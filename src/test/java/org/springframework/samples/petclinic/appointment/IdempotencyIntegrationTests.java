@@ -15,6 +15,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import tools.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
@@ -80,6 +82,19 @@ public class IdempotencyIntegrationTests {
 	@MockitoSpyBean
 	private AppointmentService aService;
 
+	@Autowired
+	private MeterRegistry meterRegistry;
+
+	public double getMetricsCount(String outcome) {
+
+		Counter counter = this.meterRegistry.find("petclinic.appointment.idempotency")
+			.tag("outcome", outcome)
+			.counter();
+
+		return counter == null ? 0 : counter.count();
+
+	}
+
 	/*
 	 * test1 POST /api/pets/1/appointments Idempotency-Key:
 	 * 550e8400-e29b-41d4-a716-446655440000 Content-Type: application/json {"slotId": 7}
@@ -107,6 +122,8 @@ public class IdempotencyIntegrationTests {
 
 		// action post to create appointment
 
+		double before = getMetricsCount("created");
+
 		mockMvc
 			.perform(post("/api/pets/{petId}/appointments", petId).header("Idempotency-Key", key.toString())
 				.contentType(MediaType.APPLICATION_JSON)
@@ -119,6 +136,7 @@ public class IdempotencyIntegrationTests {
 			.orElseThrow();
 
 		assertThat(receipt.getAppointmentId()).isNotNull();
+		assertThat(getMetricsCount("created")).isEqualTo(before + 1);
 
 	}
 
@@ -154,6 +172,8 @@ public class IdempotencyIntegrationTests {
 			.andExpect(status().isCreated())
 			.andReturn();
 
+		double before = getMetricsCount("replayed");
+
 		MvcResult second = mockMvc
 			.perform(post("/api/pets/{petId}/appointments", petId).header("Idempotency-Key", key.toString())
 				.contentType(MediaType.APPLICATION_JSON)
@@ -167,6 +187,7 @@ public class IdempotencyIntegrationTests {
 				AppointmentResponse.class);
 
 		assertThat(first_Response.id()).isEqualTo(second_Response.id());
+		assertThat(getMetricsCount("replayed")).isEqualTo(before + 1);
 
 	}
 
@@ -206,11 +227,14 @@ public class IdempotencyIntegrationTests {
 				.content(objectMapper.writeValueAsString(r1)))
 			.andExpect(status().isCreated());
 
+		double before = getMetricsCount("key_conflit");
+
 		mockMvc
 			.perform(post("/api/pets/{petId}/appointments", petId).header("Idempotency-Key", key.toString())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(r2)))
 			.andExpect(status().isConflict());
+		assertThat(getMetricsCount("key_conflict")).isEqualTo(before + 1);
 
 	}
 
@@ -243,6 +267,7 @@ public class IdempotencyIntegrationTests {
 		AppointmentRequest r = new AppointmentRequest(savedSlot.getId());
 
 		String operation = "CREATE_APPOINTMENT";
+		double before = getMetricsCount("created");
 
 		// action
 		mockMvc
@@ -250,12 +275,14 @@ public class IdempotencyIntegrationTests {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(r)))
 			.andExpect(status().isCreated());
+		assertThat(getMetricsCount("created")).isEqualTo(before + 1);
 
 		mockMvc
 			.perform(post("/api/pets/{petId}/appointments", petId2).header("Idempotency-Key", key2.toString())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(r)))
 			.andExpect(status().isConflict());
+		assertThat(getMetricsCount("created")).isEqualTo(before + 1);
 
 		assertThat(this.receipts.findByPrincipalIdAndOperationAndIdempotencyKey(owner1.getId(), operation, key1))
 			.isNotEmpty();
@@ -430,5 +457,13 @@ public class IdempotencyIntegrationTests {
 			.andExpect(status().isCreated());
 
 	}
+
+	/*
+	 * test8 验证 created、replayed、key_conflict 三个 Counter 的增量
+	 *
+	 *
+	 *
+	 *
+	 */
 
 }

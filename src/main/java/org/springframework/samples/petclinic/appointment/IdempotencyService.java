@@ -13,6 +13,9 @@ import org.springframework.samples.petclinic.owner.OwnerRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import io.micrometer.core.instrument.MeterRegistry; //
+import org.springframework.transaction.support.TransactionSynchronization; //
+import org.springframework.transaction.support.TransactionSynchronizationManager; //
 
 @Service
 public class IdempotencyService {
@@ -23,12 +26,25 @@ public class IdempotencyService {
 
 	private final OwnerRepository owners;
 
+	private final MeterRegistry meterRegistry;
+
 	public IdempotencyService(IdempotencyReceiptRepository receipts, AppointmentService appointmentService,
-			OwnerRepository owners) {
+			OwnerRepository owners, MeterRegistry meterRegistry) {
 		this.receipts = receipts;
 		this.appointmentService = appointmentService;
 		this.owners = owners;
+		this.meterRegistry = meterRegistry;
 
+	}
+
+	private void recordCreatedAfterCommit(String outcome) { // 事务真正提交后才计数
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				meterRegistry.counter("petclinic.appointment.idempotency", "outcome", outcome).increment();
+
+			}
+		});
 	}
 
 	private byte[] calculateRequestHash(int petId, AppointmentRequest request) {
@@ -71,7 +87,7 @@ public class IdempotencyService {
 				.orElseThrow();
 
 			receipt.setAppointmentId(appointment.id());
-
+			recordCreatedAfterCommit("created"); // 事务真正提交后才计数
 			return appointment;
 
 		}
@@ -88,10 +104,13 @@ public class IdempotencyService {
 				.orElseThrow();
 			byte[] preRequestHash = receipt.getRequestHash();
 			if (Arrays.equals(preRequestHash, requestHash)) {
+				recordCreatedAfterCommit("replayed");
 				return this.appointmentService.getAppointmentById(receipt.getAppointmentId());
 			}
 			else
-				throw new ResponseStatusException(HttpStatus.CONFLICT, "conflict request");
+				meterRegistry.counter("petclinic.appointment.idempotency", "outcome", "key_conflict").increment();
+			// same owner, pet, UUID but different slot
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "conflict request");
 
 		}
 		throw new UnsupportedOperationException("Not implemented");
