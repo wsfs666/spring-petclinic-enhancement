@@ -19,3 +19,12 @@ services:
       - POSTGRES_PASSWORD=petclinic
       - POSTGRES_USER=petclinic
       - POSTGRES_DB=petclinic
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U petclinic -d petclinic"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - petclinic-postgres-data:/var/lib/postgresql
+volumes:
+  petclinic-postgres-data:

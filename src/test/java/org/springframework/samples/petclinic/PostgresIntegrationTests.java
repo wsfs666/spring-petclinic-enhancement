@@ -45,6 +45,7 @@ import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.samples.petclinic.vet.VetRepository;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.web.client.RestTemplate;
 import org.testcontainers.DockerClientFactory;
 
@@ -52,6 +53,8 @@ import org.testcontainers.DockerClientFactory;
 		"spring.docker.compose.start.arguments=--force-recreate,--renew-anon-volumes,postgres" })
 @ActiveProfiles("postgres")
 @DisabledInNativeImage
+// @Sql(scripts = "/db/test/add_owner_version.sql", executionPhase =
+// Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 public class PostgresIntegrationTests {
 
 	@LocalServerPort
