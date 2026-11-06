@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory;
 public class GetAvailableSlotsTool {
 
 	private AppointmentSlotService appointmentSlotService;
-    private static final Logger log =
-        LoggerFactory.getLogger(GetAvailableSlotsTool.class);
+
+	private static final Logger log = LoggerFactory.getLogger(GetAvailableSlotsTool.class);
 
 	public GetAvailableSlotsTool(AppointmentSlotService appointmentSlotService) {
 		this.appointmentSlotService = appointmentSlotService;
@@ -23,7 +23,7 @@ public class GetAvailableSlotsTool {
 
 	@Tool(description = "get current available future appointment slots from the clinic database ")
 	public List<AvailableSlotResponse> getAvailableSlots() {
-        log.info("getAvailableSlots tool invoked");
+		log.info("getAvailableSlots tool invoked");
 		return this.appointmentSlotService.getAvailableSlots();
 
 	}
