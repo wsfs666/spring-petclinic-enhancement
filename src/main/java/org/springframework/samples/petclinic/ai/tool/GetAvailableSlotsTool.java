@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 @Component
 
-public class GetAvailableSlotsTool {
+public class GetAvailableSlotsTool implements AgentTool {
 
 	private AppointmentSlotService appointmentSlotService;
 

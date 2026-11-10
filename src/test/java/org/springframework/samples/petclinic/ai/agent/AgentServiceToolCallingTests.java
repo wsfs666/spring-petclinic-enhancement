@@ -90,7 +90,7 @@ public class AgentServiceToolCallingTests {
 		GetAvailableSlotsTool getAvailableSlotsTool = new GetAvailableSlotsTool(appointmentSlotService);
 
 		ChatClient.Builder chatClientBuilder = ChatClient.builder(fakeChatModel);
-		AgentService agentService = new AgentService(chatClientBuilder, petVisitHistoryTool, getAvailableSlotsTool);
+		AgentService agentService = new AgentService(chatClientBuilder, List.of(petVisitHistoryTool));
 
 		//
 		assertThat(toolCallresponse.hasToolCalls()).isTrue();
@@ -156,7 +156,7 @@ public class AgentServiceToolCallingTests {
 		GetAvailableSlotsTool getAvailableSlotsTool = new GetAvailableSlotsTool(appointmentSlotService);
 
 		ChatClient.Builder chatClientBuilder = ChatClient.builder(fakChatModel);
-		AgentService agentService = new AgentService(chatClientBuilder, petVisitHistoryTool, getAvailableSlotsTool);
+		AgentService agentService = new AgentService(chatClientBuilder, List.of(getAvailableSlotsTool));
 
 		assertThat(toolCallResponse.hasToolCalls()).isTrue();
 

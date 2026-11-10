@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <title th:text="#{ai.title}"></title>
+</head>
+<body>
+    <h1 th:text="#{ai.title}"></h1>
+
+    <div id="chatMessages"></div>
+
+    <div id="bookingCard" hidden>
+ <p>
+    <span th:text="#{ai.pet}"></span>
+    <span id="petId"></span>
+</p>
+
+<p>
+    <span th:text="#{ai.slot}"></span>
+    <span id="slotId"></span>
+</p>
+
+<p>
+    <span th:text="#{ai.start}"></span>
+    <span id="startAt"></span>
+</p>
+
+<p>
+    <span th:text="#{ai.end}"></span>
+    <span id="endAt"></span>
+</p>
+
+   <button id="confirmBtn" type="button"
+        th:text="#{ai.confirm}"></button>
+   <button id="cancelBtn" type="button"
+        th:text="#{ai.cancel}"></button>
+
+
+
+    </div>
+
+    <form id="chatForm">
+        <textarea id="messageInput" required></textarea>
+      <button type="submit"
+        th:text="#{ai.send}"></button>
+    </form>
+
+    <script>
+    
+
+        // 下一步实现 JavaScript
+    
+    const chatForm = document.getElementById("chatForm");
+const messageInput = document.getElementById("messageInput");
+const bookingCard = document.getElementById("bookingCard");
+const confirmBtn = document.getElementById("confirmBtn");
+const cancelBtn = document.getElementById("cancelBtn");
+
+let currentConfirmationId = null;
+
+function appendMessage(message) {
+    const chatMessages = document.getElementById("chatMessages");
+    const messageElement = document.createElement("p");
+
+    messageElement.textContent = message;
+    chatMessages.appendChild(messageElement);
+}
+
+// 1. 用户发送聊天消息
+chatForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const message = messageInput.value.trim();
+    if (!message) return;
+
+    appendMessage(`You: ${message}`);
+    messageInput.value = "";
+
+    try {
+        const response = await fetch("/api/ai/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "text/plain"
+            },
+            body: message
+        });
+
+        if (!response.ok) {
+            throw new Error(`Chat failed: HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        appendMessage(`Assistant: ${data.answer}`);
+
+        if (data.booking != null) {
+            document.getElementById("petId").textContent =
+                data.booking.petId;
+
+            document.getElementById("slotId").textContent =
+                data.booking.slotId;
+
+            document.getElementById("startAt").textContent =
+                data.booking.startAt;
+
+            document.getElementById("endAt").textContent =
+                data.booking.endAt;
+
+            currentConfirmationId = data.booking.confirmationId;
+            bookingCard.hidden = false;
+
+        } else {
+            currentConfirmationId = null;
+            bookingCard.hidden = true;
+        }
+
+    } catch (error) {
+        appendMessage(`Chat error: ${error.message}`);
+    }
+});
+
+// 2. 用户点击 Confirm
+confirmBtn.addEventListener("click", async () => {
+    if (!currentConfirmationId) return;
+
+    confirmBtn.disabled = true;
+
+    try {
+        const response = await fetch(
+            `/api/ai/bookings/${currentConfirmationId}/confirm`,
+            { method: "POST" }
+        );
+
+        if (!response.ok) {
+             const body = await response.text();
+
+    console.error("Request URL:", response.url);
+    console.error("HTTP Status:", response.status);
+    console.error("Response Body:", body);
+            throw new Error(`Booking failed: HTTP ${response.status}`);
+        }
+
+        const appointment = await response.json();
+
+        appendMessage(
+            `Your appointment has been confirmed! Appointment ID: ${appointment.id}`
+        );
+
+        bookingCard.hidden = true;
+        currentConfirmationId = null;
+
+    } catch (error) {
+        appendMessage(error.message);
+    } finally {
+        confirmBtn.disabled = false;
+    }
+});
+
+// 3. 用户点击 Cancel
+cancelBtn.addEventListener("click", () => {
+    currentConfirmationId = null;
+    bookingCard.hidden = true;
+
+    appendMessage("Booking cancelled.");
+});
+    </script>
+</body>
+</html>
