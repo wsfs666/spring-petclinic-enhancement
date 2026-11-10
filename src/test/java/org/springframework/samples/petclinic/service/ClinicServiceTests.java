@@ -37,6 +37,7 @@ import org.springframework.samples.petclinic.owner.PetTypeRepository;
 import org.springframework.samples.petclinic.owner.Visit;
 import org.springframework.samples.petclinic.vet.Vet;
 import org.springframework.samples.petclinic.vet.VetRepository;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -68,8 +69,11 @@ import org.springframework.transaction.annotation.Transactional;
  * @author Dave Syer
  */
 @DataJpaTest
+
 // Ensure that if the mysql profile is active we connect to the real database:
 @AutoConfigureTestDatabase(replace = Replace.NONE)
+
+@Sql(scripts = "/db/test/add_owner_version.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 // @TestPropertySource("/application-postgres.properties")
 class ClinicServiceTests {
 
