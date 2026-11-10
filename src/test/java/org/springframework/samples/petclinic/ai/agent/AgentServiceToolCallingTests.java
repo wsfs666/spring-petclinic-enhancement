@@ -82,12 +82,10 @@ public class AgentServiceToolCallingTests {
 		};
 
 		VisitService visitService = mock(VisitService.class);
-		AppointmentSlotService appointmentSlotService = mock(AppointmentSlotService.class);
 
 		when(visitService.getVisitsByPetId(7)).thenReturn(new PetVisitHistoryResult(7, "Cola", List.of()));
 
 		PetVisitHistoryTool petVisitHistoryTool = new PetVisitHistoryTool(visitService);
-		GetAvailableSlotsTool getAvailableSlotsTool = new GetAvailableSlotsTool(appointmentSlotService);
 
 		ChatClient.Builder chatClientBuilder = ChatClient.builder(fakeChatModel);
 		AgentService agentService = new AgentService(chatClientBuilder, List.of(petVisitHistoryTool));
@@ -147,12 +145,10 @@ public class AgentServiceToolCallingTests {
 			}
 		};
 
-		VisitService visitService = mock(VisitService.class);
 		AppointmentSlotService appointmentSlotService = mock(AppointmentSlotService.class);
 
 		when(appointmentSlotService.getAvailableSlots()).thenReturn(List.of());
 
-		PetVisitHistoryTool petVisitHistoryTool = new PetVisitHistoryTool(visitService);
 		GetAvailableSlotsTool getAvailableSlotsTool = new GetAvailableSlotsTool(appointmentSlotService);
 
 		ChatClient.Builder chatClientBuilder = ChatClient.builder(fakChatModel);

@@ -53,7 +53,15 @@ public class AgentService {
 				"A prepared booking is NOT a confirmed appointment.\n" + //
 				"Ask the user to review and confirm the booking.\n" + //
 				"Never claim an appointment was created before the backend confirms it.\n" + //
-				"Do not invent appointment availability or booking results.")
+				"Do not invent appointment availability or booking results.\n" + //
+				"When answering questions using clinic policies, cite the sourceId of the supporting policy documents.\n"
+				+ //
+				"Do not invent clinic policies or unsupported actions.\n" + //
+				"Answer each part of the user's question explicitly.\n" + //
+				"Distinguish between whether an action is allowed and whether a fee applies.\n" + //
+				"Cite only policies provided by retrieved knowledge.\n" + //
+				"Group citations at the end of the answer.\n" + //
+				"Avoid repeating the same policy citation unnecessarily.")
 			.user(message)
 			.toolContext(Map.of("bookingHolder", holder))
 			.tools(tools)
